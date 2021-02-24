@@ -36,7 +36,7 @@ async function start({ showBrowser = false, qrCodeData = false, session = true }
         page.setDefaultTimeout(60000);
 
         await page.goto("https://web.whatsapp.com");
-        console.log('session ->' + session);
+        
         if (session && await isAuthenticated()) {
             return;
         }
@@ -61,9 +61,7 @@ async function start({ showBrowser = false, qrCodeData = false, session = true }
  */
 function isAuthenticated() {
     console.log('Authenticating...');
-    return merge(needsToScan(page), isInsideChat(page))
-        .pipe(take(1))
-        .toPromise();
+    return  needsToScan(page);
 }
 
 function needsToScan() {
@@ -171,18 +169,33 @@ async function sendTo(phoneOrContact, message) {
 		
 		const form = await page.$('a#contact_send');
 		await form.evaluate( f => f.click() );
-		
+
+        //Verificação de número inválido
+        let invalidNumber = false;
+        try {
+          await page.waitForSelector('div._1HX2v > div > div', { timeout: 400 });
+          invalidNumber = true;
+
+        } catch (error) {
+          invalidNumber = false;
+        }
+
+        if (invalidNumber) {
+            throw ('Número inválido');
+        }
+        
         await page.waitForSelector('div[tabindex="-1"]', { timeout: 5000 });
         await page.keyboard.press("Enter");
         await page.waitFor(1000);
         process.stdout.clearLine();
         process.stdout.cursorTo(0);
-        process.stdout.write(`${phone} Sent\n`);
+        process.stdout.write(`${phone} - Enviado\n`);
 		counter.success++;
+        
     } catch (err) {
         process.stdout.clearLine();
         process.stdout.cursorTo(0);
-        process.stdout.write(`${phone} Failed\n`);
+        process.stdout.write(`${phone} - ${err} - Falha\n`);
         counter.fails++;
     }
 }
