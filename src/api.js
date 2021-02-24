@@ -149,7 +149,7 @@ async function sendTo(phoneOrContact, message) {
         process.stdout.write("Sending Message...\r");
 		await page.waitForSelector("div#startup", { hidden: true, timeout: 60000 });
         
-        await page.waitForSelector('#side', { timeout: 10000 });
+        await page.waitForSelector('#side', { timeout: 60000 });
         try {
             await page.waitForSelector('#contact_send', { timeout: 1000 });
         } catch (err) {
