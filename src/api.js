@@ -36,6 +36,7 @@ async function start({ showBrowser = false, qrCodeData = false, session = true }
         page.setDefaultTimeout(60000);
 
         await page.goto("https://web.whatsapp.com");
+        console.log('session ->' + session);
         if (session && await isAuthenticated()) {
             return;
         }
@@ -148,15 +149,36 @@ async function sendTo(phoneOrContact, message) {
     }
     try {
         process.stdout.write("Sending Message...\r");
-        await page.goto(`https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`);
-        await page.waitForSelector("div#startup", { hidden: true, timeout: 60000 });
+		await page.waitForSelector("div#startup", { hidden: true, timeout: 60000 });
+        
+        await page.waitForSelector('#side', { timeout: 10000 });
+        try {
+            await page.waitForSelector('#contact_send', { timeout: 1000 });
+        } catch (err) {
+            await page.evaluate(() => {
+              document.querySelector('#side').innerHTML += '<a id="contact_send" target="_blank" rel="noopener noreferrer" class="_1VzZY selectable-text invisible-space copyable-text">Enviar</a>';
+            });
+        }
+
+        async function setSelectVal(sel, val) {
+            page.evaluate((data) => {
+                return document.querySelector(data.sel).href = data.val
+            }, {sel, val})
+        }
+        
+        await setSelectVal('#contact_send', `https://wa.me/${phone}?text=${encodeURIComponent(message)}`);
+
+		
+		const form = await page.$('a#contact_send');
+		await form.evaluate( f => f.click() );
+		
         await page.waitForSelector('div[tabindex="-1"]', { timeout: 5000 });
         await page.keyboard.press("Enter");
         await page.waitFor(1000);
         process.stdout.clearLine();
         process.stdout.cursorTo(0);
         process.stdout.write(`${phone} Sent\n`);
-        counter.success++;
+		counter.success++;
     } catch (err) {
         process.stdout.clearLine();
         process.stdout.cursorTo(0);
