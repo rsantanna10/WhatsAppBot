@@ -191,6 +191,7 @@ async function sendTo(phoneOrContact, message) {
         process.stdout.cursorTo(0);
         process.stdout.write(`${phone} - Enviado\n`);
 		counter.success++;
+        await sleep(120000);
         
     } catch (err) {
         process.stdout.clearLine();
@@ -232,6 +233,10 @@ async function end() {
     await browser.close();
     console.log(`Result: ${counter.success} sent, ${counter.fails} failed`);
 }
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
 
 module.exports = {
     start,
