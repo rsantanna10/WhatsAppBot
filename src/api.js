@@ -175,9 +175,14 @@ async function sendTo(phoneOrContact, message) {
         try {
           await page.waitForSelector('div._1HX2v > div > div', { timeout: 400 });
           invalidNumber = true;
-
         } catch (error) {
-          invalidNumber = false;
+            //Nova verificação
+            try {
+                await page.waitForSelector('div._3NCh_ > div > div', { timeout: 400 });
+                invalidNumber = true;    
+              } catch{
+                invalidNumber = false;
+              }
         }
 
         if (invalidNumber) {
