@@ -3,7 +3,8 @@ const qrcode = require("qrcode-terminal");
 const { from, merge } = require('rxjs');
 const { take } = require('rxjs/operators');
 const path = require('path');
-var rimraf = require("rimraf");
+const rimraf = require("rimraf");
+const fs = require("fs");
 
 let browser = null;
 let page = null;
@@ -206,15 +207,125 @@ async function sendTo(phoneOrContact, message) {
     }
 }
 
+async function send(phoneOrContacts, message) {
+    for (let phoneOrContact of phoneOrContacts) {
+        await sendTo(phoneOrContact.number, message.replace('{name}', phoneOrContact.name));
+    }
+}
+
 /**
  * @param {array} phones Array of phone numbers: ['5535988841854', ...]
  * @param {string} message Message to send to every phone number
  * Send same message to every phone number
  */
-async function send(phoneOrContacts, message) {
-    for (let phoneOrContact of phoneOrContacts) {
-        await sendTo(phoneOrContact.number, message.replace('{name}', phoneOrContact.name));
+
+ async function scrapperLastMessageTo(phoneOrContact) {
+
+    const formatDateTime = (dt) => {
+        let dateTimeFormat = dt.slice(dt.indexOf('[') + 1, dt.indexOf(']')).replace(',', '');
+
+        return new Date(dateTimeFormat.split(' ')[1] + ' ' + dateTimeFormat.split(' ')[0]).toLocaleDateString() + ' ' + dateTimeFormat.split(' ')[0];
     }
+
+    let phone = phoneOrContact;
+    if (typeof phoneOrContact === "object") {
+        phone = phoneOrContact.phone;
+    }
+    try {
+        process.stdout.write("Scrapping ...\r");
+		await page.waitForSelector("div#startup", { hidden: true, timeout: 60000 });
+        
+        await page.waitForSelector('#side', { timeout: 60000 });
+        try {
+            await page.waitForSelector('#contact_send', { timeout: 1000 });
+        } catch (err) {
+            await page.evaluate(() => {
+              document.querySelector('#side').innerHTML += '<a id="contact_send" target="_blank" rel="noopener noreferrer" class="_1VzZY selectable-text invisible-space copyable-text">Enviar</a>';
+            });
+        }
+
+        async function setSelectVal(sel, val) {
+            page.evaluate((data) => {
+                return document.querySelector(data.sel).href = data.val
+            }, {sel, val})
+        }
+        
+        await setSelectVal('#contact_send', `https://wa.me/${phone}`);
+		
+		const form = await page.$('a#contact_send');		
+        await form.evaluate( f => f.click() );
+
+        //Verificação de número inválido
+        let invalidNumber = false;
+        try {
+          await page.waitForSelector('div._1HX2v > div > div', { timeout: 400 });
+          invalidNumber = true;
+        } catch (error) {
+            //Nova verificação
+            try {
+                await page.waitForSelector('div._3NCh_ > div > div', { timeout: 400 });
+                invalidNumber = true;    
+              } catch {
+                invalidNumber = false;
+              }
+        }
+
+        if (invalidNumber) {
+            throw ('Número inválido');
+        }
+        
+        //Verificando se possui mensagem
+        try {
+            await page.waitForSelector("#main > div:nth-of-type(3) > div > div > div:nth-of-type(3) > div:last-child > div > div > div > div:first-of-type", { timeout: 5000 });
+        } catch {
+            throw ('Não possui mensagem para esse contato');
+        }
+
+        const date = await page.$$eval("#main > div:nth-of-type(3) > div > div > div:nth-of-type(3) > div:last-child > div > div > div > div:first-of-type", el => el.map(x => x.getAttribute("data-pre-plain-text")));
+                                         
+        const dateFormat = formatDateTime(date[0]);
+
+        const sent = (await page.$$eval("#main > div:nth-of-type(3) > div > div > div:nth-of-type(3) > div:last-child", el => el.map(x => x.getAttribute("data-id"))))[0].trim().includes("true_") ? 'Enviado' : 'Recebido';
+
+        let status = '-';
+        
+        if (sent === 'Enviado') {
+            status = (await page.$$eval("#main > div:nth-of-type(3) > div > div > div:nth-of-type(3) > div:last-child > div > div > div > div:last-of-type > div > div > span", el => el.map(x => x.getAttribute("aria-label"))))[0].trim();
+        }
+
+        const statusFormat = status === 'Read' ? 'Lido' : 
+                             status === 'Delivered' ? 'Entregue' : 
+                             status === 'Sent' ? 'Enviado' : 
+                             status === 'Pending' ? 'Pendente' :
+                             status === '-' ? status : 'Status não reconhecido';
+
+        process.stdout.clearLine();
+        process.stdout.cursorTo(0);
+        process.stdout.write(`${phone} - Enviado\n`);
+		counter.success++;
+        return `${phone};${sent};${dateFormat};${statusFormat}\n`;
+        
+        
+    } catch (err) {
+        process.stdout.clearLine();
+        process.stdout.cursorTo(0);
+        process.stdout.write(`${phone} - ${err} - Falha\n`);
+        counter.fails++;
+
+        return `${phone};;${err}\n`;
+    }
+}
+
+async function scrapperLastMessage(phoneOrContacts) {
+
+    var writeStream = fs.createWriteStream("enviados-recebidos.csv");
+       
+    for (let phoneOrContact of phoneOrContacts) {
+        const result = await scrapperLastMessageTo(phoneOrContact.number);
+        writeStream.write(result);
+    }
+
+    writeStream.end();
 }
 
 /**
@@ -247,6 +358,8 @@ module.exports = {
     start,
     send,
     sendTo,
+    scrapperLastMessage,
+    scrapperLastMessageTo,
     end,
     waitQRCode
 }
