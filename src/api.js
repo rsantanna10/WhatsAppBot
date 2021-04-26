@@ -258,12 +258,12 @@ async function send(phoneOrContacts, message) {
         //Verificação de número inválido
         let invalidNumber = false;
         try {
-          await page.waitForSelector('div._1HX2v > div > div', { timeout: 400 });
+          await page.waitForSelector('div._1HX2v > div > div', { timeout: 4000 });
           invalidNumber = true;
         } catch (error) {
             //Nova verificação
             try {
-                await page.waitForSelector('div._3NCh_ > div > div', { timeout: 400 });
+                await page.waitForSelector('div._3NCh_ > div > div', { timeout: 4000 });
                 invalidNumber = true;    
               } catch {
                 invalidNumber = false;
