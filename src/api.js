@@ -222,9 +222,8 @@ async function send(phoneOrContacts, message) {
  async function scrapperLastMessageTo(phoneOrContact) {
 
     const formatDateTime = (dt) => {
-        let dateTimeFormat = dt.slice(dt.indexOf('[') + 1, dt.indexOf(']')).replace(',', '');
-
-        return new Date(dateTimeFormat.split(' ')[1] + ' ' + dateTimeFormat.split(' ')[0]).toLocaleDateString() + ' ' + dateTimeFormat.split(' ')[0];
+        let dateTimeFormat = dt.substr(0, dt.indexOf(']')).replace('[', '').replace(']', '').replace(' ', '').split(','); 
+        return dateTimeFormat[1] + ' ' + dateTimeFormat[0];
     }
 
     let phone = phoneOrContact;
@@ -273,35 +272,41 @@ async function send(phoneOrContacts, message) {
         if (invalidNumber) {
             throw ('Número inválido');
         }
-        
+
+        //Verificando qual div deverá obter a mensagem
+        const styleAttr = await page.$$eval("#main > div:nth-of-type(3) > div > div > div:nth-of-type(3)", el => el.map(x => x.getAttribute("style")));
+        const dataValue =styleAttr[0] === "display: none;" ? '2' : '3';
+                
         //Verificando se possui mensagem
         try {
-            await page.waitForSelector("#main > div:nth-of-type(3) > div > div > div:nth-of-type(3) > div:last-child > div > div > div > div:first-of-type", { timeout: 5000 });
+            await page.waitForSelector("#main > div:nth-of-type(3) > div > div > div:nth-of-type(" + dataValue + ") > div:last-child > div > div > div > div:first-of-type", { timeout: 1000 });
         } catch {
             throw ('Não possui mensagem para esse contato');
         }
+        let dateFormat = '';
+        const date = await page.$$eval("#main > div:nth-of-type(3) > div > div > div:nth-of-type(" + dataValue + ") > div:last-child > div > div > div > div:first-of-type", el => el.map(x => x.getAttribute("data-pre-plain-text")));
+          
+        if (date[0] !== null) {
+            dateFormat = formatDateTime(date[0]);
+        }
 
-        const date = await page.$$eval("#main > div:nth-of-type(3) > div > div > div:nth-of-type(3) > div:last-child > div > div > div > div:first-of-type", el => el.map(x => x.getAttribute("data-pre-plain-text")));
-                                         
-        const dateFormat = formatDateTime(date[0]);
-
-        const sent = (await page.$$eval("#main > div:nth-of-type(3) > div > div > div:nth-of-type(3) > div:last-child", el => el.map(x => x.getAttribute("data-id"))))[0].trim().includes("true_") ? 'Enviado' : 'Recebido';
+        const sent = (await page.$$eval("#main > div:nth-of-type(3) > div > div > div:nth-of-type(" + dataValue + ") > div:last-child", el => el.map(x => x.getAttribute("data-id"))))[0].trim().includes("true_") ? 'Enviada' : 'Recebida';
 
         let status = '-';
         
-        if (sent === 'Enviado') {
-            status = (await page.$$eval("#main > div:nth-of-type(3) > div > div > div:nth-of-type(3) > div:last-child > div > div > div > div:last-of-type > div > div > span", el => el.map(x => x.getAttribute("aria-label"))))[0].trim();
+        if (sent === 'Enviada') {
+            status = (await page.$$eval("#main > div:nth-of-type(3) > div > div > div:nth-of-type(" + dataValue + ") > div:last-child > div > div > div > div:last-of-type > div > div > span", el => el.map(x => x.getAttribute("aria-label"))))[0].trim();
         }
 
-        const statusFormat = status === 'Read' ? 'Lido' : 
-                             status === 'Delivered' ? 'Entregue' : 
-                             status === 'Sent' ? 'Enviado' : 
-                             status === 'Pending' ? 'Pendente' :
+        const statusFormat = (status === 'Read' || status === 'Lida') ? 'Lida' : 
+                             (status === 'Delivered' || status === 'Entregue') ? 'Entregue' : 
+                             (status === 'Sent' || status === 'Enviada ') ? 'Enviada' : 
+                             (status === 'Pending' || status === 'Pendente') ? 'Pendente' :
                              status === '-' ? status : 'Status não reconhecido';
 
         process.stdout.clearLine();
         process.stdout.cursorTo(0);
-        process.stdout.write(`${phone} - Enviado\n`);
+        process.stdout.write(`${phone} - Scrapper OK\n`);
 		counter.success++;
         return `${phone};${sent};${dateFormat};${statusFormat}\n`;
         
@@ -309,7 +314,7 @@ async function send(phoneOrContacts, message) {
     } catch (err) {
         process.stdout.clearLine();
         process.stdout.cursorTo(0);
-        process.stdout.write(`${phone} - ${err} - Falha\n`);
+        process.stdout.write(`${phone} - ${err} - Scrapper Falha\n`);
         counter.fails++;
 
         return `${phone};;${err}\n`;
