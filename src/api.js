@@ -273,6 +273,9 @@ async function send(phoneOrContacts, message) {
             throw ('Número inválido');
         }
 
+
+        await page.waitForSelector('"#main > div:nth-of-type(3) > div > div > div:nth-of-type(3)', { timeout: 10000 });
+
         //Verificando qual div deverá obter a mensagem
         const styleAttr = await page.$$eval("#main > div:nth-of-type(3) > div > div > div:nth-of-type(3)", el => el.map(x => x.getAttribute("style")));
         const dataValue =styleAttr[0] === "display: none;" ? '2' : '3';
