@@ -273,32 +273,35 @@ async function send(phoneOrContacts, message) {
             throw ('Número inválido');
         }
 
-
-        await page.waitForSelector('"#main > div:nth-of-type(3) > div > div > div:nth-of-type(3)', { timeout: 10000 });
+        await page.waitForSelector('#main > div:nth-of-type(3) > div > div > div:nth-of-type(3)', { timeout: 10000 });
 
         //Verificando qual div deverá obter a mensagem
         const styleAttr = await page.$$eval("#main > div:nth-of-type(3) > div > div > div:nth-of-type(3)", el => el.map(x => x.getAttribute("style")));
         const dataValue =styleAttr[0] === "display: none;" ? '2' : '3';
                 
         //Verificando se possui mensagem
-        try {
-            await page.waitForSelector("#main > div:nth-of-type(3) > div > div > div:nth-of-type(" + dataValue + ") > div:last-child > div > div > div > div:first-of-type", { timeout: 1000 });
-        } catch {
+        const selector = "#main > div:nth-of-type(3) > div > div > div:nth-of-type(" + dataValue + ") > div[class*='message-']";
+        const divs = await page.evaluate((sel) => Array.from(document.querySelectorAll(sel)).map(d => d.getAttribute("data-id")), selector);
+
+        if (divs.length === 0) {
             throw ('Não possui mensagem para esse contato');
         }
+
+        const dataIdLastMessage = divs[divs.length -1];
+
         let dateFormat = '';
-        const date = await page.$$eval("#main > div:nth-of-type(3) > div > div > div:nth-of-type(" + dataValue + ") > div:last-child > div > div > div > div:first-of-type", el => el.map(x => x.getAttribute("data-pre-plain-text")));
+        const date = await page.$$eval("div[data-id='" + dataIdLastMessage + "'] > div > div > div > div:first-of-type", el => el.map(x => x.getAttribute("data-pre-plain-text")));
           
         if (date[0] !== null) {
             dateFormat = formatDateTime(date[0]);
         }
 
-        const sent = (await page.$$eval("#main > div:nth-of-type(3) > div > div > div:nth-of-type(" + dataValue + ") > div:last-child", el => el.map(x => x.getAttribute("data-id"))))[0].trim().includes("true_") ? 'Enviada' : 'Recebida';
+        const sent = dataIdLastMessage.trim().includes("true_") ? 'Enviada' : 'Recebida';
 
         let status = '-';
         
         if (sent === 'Enviada') {
-            status = (await page.$$eval("#main > div:nth-of-type(3) > div > div > div:nth-of-type(" + dataValue + ") > div:last-child > div > div > div > div:last-of-type > div > div > span", el => el.map(x => x.getAttribute("aria-label"))))[0].trim();
+            status = (await page.$$eval("div[data-id='" + dataIdLastMessage + "']  > div > div > div > div:last-of-type > div > div > span", el => el.map(x => x.getAttribute("aria-label"))))[0].trim();
         }
 
         const statusFormat = (status === 'Read' || status === 'Lida') ? 'Lida' : 
