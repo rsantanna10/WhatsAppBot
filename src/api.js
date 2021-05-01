@@ -62,7 +62,7 @@ async function start({ showBrowser = false, qrCodeData = false, session = true }
  */
 function isAuthenticated() {
     console.log('Authenticating...');
-    return  needsToScan(page);
+    return  needsToScan();
 }
 
 function needsToScan() {
@@ -277,11 +277,11 @@ async function send(phoneOrContacts, message) {
 
         //Verificando qual div deverá obter a mensagem
         const styleAttr = await page.$$eval("#main > div:nth-of-type(3) > div > div > div:nth-of-type(3)", el => el.map(x => x.getAttribute("style")));
-        const dataValue =styleAttr[0] === "display: none;" ? '2' : '3';
+        const dataValue = styleAttr[0] === "display: none;" ? '2' : '3';
                 
         //Verificando se possui mensagem
         const selector = "#main > div:nth-of-type(3) > div > div > div:nth-of-type(" + dataValue + ") > div[class*='message-']";
-        const divs = await page.evaluate((sel) => Array.from(document.querySelectorAll(sel)).map(d => d.getAttribute("data-id")), selector);
+        const divs = await page.evaluate((sel) => Array.from(document.querySelectorAll(sel)).map(d => d.getAttribute("data-id")), selector, { timeout: 10000 });
 
         if (divs.length === 0) {
             throw ('Não possui mensagem para esse contato');
