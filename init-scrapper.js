@@ -6,6 +6,7 @@ const wbm = require('./src/index');
     //Obtendo contatos
     let phones = [];
     await fs.createReadStream('contatos-scrapper.csv')
+            .setEncoding('UTF8')
             .pipe(csv())
             .on('data', (data) => phones.push(data))
             .on('end', async () => {

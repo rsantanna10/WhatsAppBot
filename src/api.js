@@ -270,7 +270,7 @@ async function send(phoneOrContacts, message) {
         }
 
         if (invalidNumber) {
-            throw ('Número inválido');
+            throw ({ type: 'NUMERO_INVALIDO', message:'Número sem WhatsApp cadastro'});
         }
 
         await page.waitForSelector('#main > div:nth-of-type(3) > div > div > div:nth-of-type(3)', { timeout: 10000 });
@@ -284,7 +284,7 @@ async function send(phoneOrContacts, message) {
         const divs = await page.evaluate((sel) => Array.from(document.querySelectorAll(sel)).map(d => d.getAttribute("data-id")), selector, { timeout: 10000 });
 
         if (divs.length === 0) {
-            throw ('Não possui mensagem para esse contato');
+            throw ({ type: 'SEM_MENSAGEM', message:'Não possui mensagem para esse contato'});
         }
 
         const dataIdLastMessage = divs[divs.length -1];
@@ -320,16 +320,21 @@ async function send(phoneOrContacts, message) {
     } catch (err) {
         process.stdout.clearLine();
         process.stdout.cursorTo(0);
-        process.stdout.write(`${phone} - ${err} - Scrapper Falha\n`);
+        process.stdout.write(`${phone} - ${err.message} - Scrapper Falha\n`);
         counter.fails++;
-
-        return `${phone};;${err}\n`;
+        if (err.type) {
+            return `${phone};${err.type};;${err.message}\n`;
+        } else {
+            return `${phone};Erro;;${err}\n`;
+        }        
     }
 }
 
 async function scrapperLastMessage(phoneOrContacts) {
 
     var writeStream = fs.createWriteStream("enviados-recebidos.csv");
+
+    writeStream.write('Número;Status;Data da Ocorrência;Descrição\n');
        
     for (let phoneOrContact of phoneOrContacts) {
         const result = await scrapperLastMessageTo(phoneOrContact.number);
