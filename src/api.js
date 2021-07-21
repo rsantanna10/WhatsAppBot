@@ -135,6 +135,25 @@ async function QRCodeExeption(msg) {
     return "QRCodeException: " + msg;
 }
 
+async function VerifyInvalidNumber() {
+
+    //Verificação de número inválido
+    let invalidNumber = false;
+    try {
+      await page.waitForSelector('div[data-animate-modal-backdrop="true"] > div > div[data-animate-modal-popup="true"]', { timeout: 4000 });
+      invalidNumber = true;
+    } catch (error) {
+        //Nova verificação
+        try {
+            await page.waitForSelector('div._3NCh_ > div > div', { timeout: 4000 });
+            invalidNumber = true;    
+          } catch {
+            invalidNumber = false;
+          }
+    }
+    return invalidNumber;
+}
+
 /**
  * @param {string} phone phone number: '5535988841854'
  * @param {string} message Message to send to phone number
@@ -172,19 +191,7 @@ async function sendTo(phoneOrContact, message) {
 		await form.evaluate( f => f.click() );
 
         //Verificação de número inválido
-        let invalidNumber = false;
-        try {
-          await page.waitForSelector('div._1HX2v > div > div', { timeout: 4000 });
-          invalidNumber = true;
-        } catch (error) {
-            //Nova verificação
-            try {
-                await page.waitForSelector('div._3NCh_ > div > div', { timeout: 4000 });
-                invalidNumber = true;    
-              } catch{
-                invalidNumber = false;
-              }
-        }
+        const invalidNumber = await VerifyInvalidNumber();
 
         if (invalidNumber) {
             throw ('Número inválido');
@@ -253,21 +260,8 @@ async function send(phoneOrContacts, message) {
 		
 		const form = await page.$('a#contact_send');		
         await form.evaluate( f => f.click() );
-
-        //Verificação de número inválido
-        let invalidNumber = false;
-        try {
-          await page.waitForSelector('div._1HX2v > div > div', { timeout: 4000 });
-          invalidNumber = true;
-        } catch (error) {
-            //Nova verificação
-            try {
-                await page.waitForSelector('div._3NCh_ > div > div', { timeout: 4000 });
-                invalidNumber = true;    
-              } catch {
-                invalidNumber = false;
-              }
-        }
+        
+        const invalidNumber = await VerifyInvalidNumber();
 
         if (invalidNumber) {
             throw ({ type: 'NUMERO_INVALIDO', message:'Número sem WhatsApp cadastro'});
