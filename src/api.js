@@ -204,7 +204,7 @@ async function sendTo(phoneOrContact, message) {
         process.stdout.cursorTo(0);
         process.stdout.write(`${phone} - Enviado\n`);
 		counter.success++;
-        await sleep(120000);
+        await sleep(60000);
         
     } catch (err) {
         process.stdout.clearLine();
