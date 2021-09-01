@@ -139,18 +139,30 @@ async function VerifyInvalidNumber() {
 
     //Verificação de número inválido
     let invalidNumber = false;
-    try {
-      await page.waitForSelector('div[data-animate-modal-backdrop="true"] > div > div[data-animate-modal-popup="true"]', { timeout: 4000 });
-      invalidNumber = true;
-    } catch (error) {
-        //Nova verificação
-        try {
-            await page.waitForSelector('div._3NCh_ > div > div', { timeout: 4000 });
-            invalidNumber = true;    
-          } catch {
-            invalidNumber = false;
-          }
-    }
+    let messageInvalid = '';
+    do {
+
+      try {
+        const divInvalid = 'div[data-animate-modal-backdrop="true"] > div > div[data-animate-modal-popup="true"] > div > div:nth-of-type(1)';
+        
+        await page.waitForSelector(divInvalid, { timeout: 8000 });
+        messageInvalid = await page.$eval(divInvalid, el => el.textContent);
+  
+        if (messageInvalid === 'O número de telefone compartilhado através de url é inválido.') {
+          invalidNumber = true;
+          break;
+        }
+      } catch (error) {
+          //Nova verificação
+          try {
+              await page.waitForSelector('div._3NCh_ > div > div', { timeout: 4000 });
+              invalidNumber = true;
+              break;
+            } catch {                
+              break;
+            }
+      }
+    } while(messageInvalid === 'Iniciando conversa')
     return invalidNumber;
 }
 
