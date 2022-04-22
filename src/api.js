@@ -158,8 +158,8 @@ async function VerifyInvalidNumber() {
               await page.waitForSelector('div._3NCh_ > div > div', { timeout: 4000 });
               invalidNumber = true;
               break;
-            } catch {                
-              break;
+            } catch {
+                break;
             }
       }
     } while(messageInvalid === 'Iniciando conversa')
@@ -279,7 +279,11 @@ async function send(phoneOrContacts, message) {
             throw ({ type: 'NUMERO_INVALIDO', message:'Número sem WhatsApp cadastro'});
         }
 
-        await page.waitForSelector('#main > div:nth-of-type(3) > div > div > div:nth-of-type(3)', { timeout: 10000 });
+        try {
+            await page.waitForSelector('#main > div:nth-of-type(3) > div > div > div:nth-of-type(3)', { timeout: 10000 });
+        } catch (err) {
+            throw ({ type: 'SEM_MENSAGEM', message:'Não possui mensagem para esse contato'});
+        }        
 
         //Verificando qual div deverá obter a mensagem
         const styleAttr = await page.$$eval("#main > div:nth-of-type(3) > div > div > div:nth-of-type(3)", el => el.map(x => x.getAttribute("style")));
