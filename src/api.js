@@ -34,7 +34,7 @@ async function start({ showBrowser = false, qrCodeData = false, session = true }
         // fix the chrome headless mode true issues
         // https://gitmemory.com/issue/GoogleChrome/puppeteer/1766/482797370
         await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36");
-        page.setDefaultTimeout(60000);
+        page.setDefaultTimeout(180000);
 
         await page.goto("https://web.whatsapp.com");
         
@@ -91,7 +91,7 @@ function deleteSession() {
  * return the data used to create the QR Code
  */
 async function getQRCodeData() {
-    await page.waitForSelector("div[data-ref]", { timeout: 60000 });
+    await page.waitForSelector("div[data-ref]", { timeout: 180000 });
     const qrcodeData = await page.evaluate(() => {
         let qrcodeDiv = document.querySelector("div[data-ref]");
         return qrcodeDiv.getAttribute("data-ref");
@@ -179,9 +179,9 @@ async function sendTo(phoneOrContact, message) {
     }
     try {
         process.stdout.write("Sending Message...\r");
-		await page.waitForSelector("div#startup", { hidden: true, timeout: 60000 });
+		await page.waitForSelector("div#startup", { hidden: true, timeout: 180000 });
         
-        await page.waitForSelector('#side', { timeout: 60000 });
+        await page.waitForSelector('#side', { timeout: 180000 });
         try {
             await page.waitForSelector('#contact_send', { timeout: 1000 });
         } catch (err) {
@@ -251,9 +251,9 @@ async function send(phoneOrContacts, message) {
     }
     try {
         process.stdout.write("Scrapping ...\r");
-		await page.waitForSelector("div#startup", { hidden: true, timeout: 60000 });
+		await page.waitForSelector("div#startup", { hidden: true, timeout: 180000 });
         
-        await page.waitForSelector('#side', { timeout: 60000 });
+        await page.waitForSelector('#side', { timeout: 180000 });
         try {
             await page.waitForSelector('#contact_send', { timeout: 1000 });
         } catch (err) {
@@ -280,17 +280,13 @@ async function send(phoneOrContacts, message) {
         }
 
         try {
-            await page.waitForSelector('#main > div:nth-of-type(3) > div > div > div:nth-of-type(3)', { timeout: 10000 });
+            await page.waitForSelector('#main [data-testid="conversation-panel-messages"] > div:last-of-type', { timeout: 10000 });
         } catch (err) {
             throw ({ type: 'SEM_MENSAGEM', message:'Não possui mensagem para esse contato'});
         }        
 
-        //Verificando qual div deverá obter a mensagem
-        const styleAttr = await page.$$eval("#main > div:nth-of-type(3) > div > div > div:nth-of-type(3)", el => el.map(x => x.getAttribute("style")));
-        const dataValue = styleAttr[0] === "display: none;" ? '2' : '3';
-                
         //Verificando se possui mensagem
-        const selector = "#main > div:nth-of-type(3) > div > div > div:nth-of-type(" + dataValue + ") > div[class*='message-']";
+        const selector = '#main [data-testid="conversation-panel-messages"] > div:last-of-type > div[class*="message-"]';
         const divs = await page.evaluate((sel) => Array.from(document.querySelectorAll(sel)).map(d => d.getAttribute("data-id")), selector, { timeout: 10000 });
 
         if (divs.length === 0) {
@@ -311,12 +307,12 @@ async function send(phoneOrContacts, message) {
         let status = '-';
         
         if (sent === 'Enviada') {
-            status = (await page.$$eval("div[data-id='" + dataIdLastMessage + "']  > div > div > div > div:last-of-type > div > div > span", el => el.map(x => x.getAttribute("aria-label"))))[0].trim();
+            status = (await page.$$eval("div[data-id='" + dataIdLastMessage + "']  span[data-testid='msg-check']", el => el.map(x => x.getAttribute("aria-label"))))[0].trim();
         }
 
         const statusFormat = (status === 'Read' || status === 'Lida') ? 'Lida' : 
                              (status === 'Delivered' || status === 'Entregue') ? 'Entregue' : 
-                             (status === 'Sent' || status === 'Enviada ') ? 'Enviada' : 
+                             (status === 'Sent' || status === 'Enviada') ? 'Enviada' : 
                              (status === 'Pending' || status === 'Pendente') ? 'Pendente' :
                              status === '-' ? status : 'Status não reconhecido';
 
