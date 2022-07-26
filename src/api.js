@@ -305,9 +305,14 @@ async function send(phoneOrContacts, message) {
         const sent = dataIdLastMessage.trim().includes("true_") ? 'Enviada' : 'Recebida';
 
         let status = '-';
+
+        console.log('data-id => ' + dataIdLastMessage);
+        console.log('sent => ' + sent);
+        await sleep(60000000);
+
         
         if (sent === 'Enviada') {
-            status = (await page.$$eval("div[data-id='" + dataIdLastMessage + "']  span[data-testid='msg-check']", el => el.map(x => x.getAttribute("aria-label"))))[0].trim();
+            status = (await page.$$eval("div[data-id='" + dataIdLastMessage + "']  div[data-testid='msg-meta'] > div:last-of-type > span", el => el.map(x => x.getAttribute("aria-label"))))[0].trim();
         }
 
         const statusFormat = (status === 'Read' || status === 'Lida') ? 'Lida' : 
