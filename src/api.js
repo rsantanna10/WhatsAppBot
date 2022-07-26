@@ -275,46 +275,53 @@ async function send(phoneOrContacts, message) {
         
         const invalidNumber = await VerifyInvalidNumber();
 
-        if (invalidNumber) {
-            throw ({ type: 'NUMERO_INVALIDO', message:'Número sem WhatsApp cadastro'});
+        let sent = '-';
+        let dateFormat = '-';
+        let statusFormat = '-';
+
+        message: {
+            if (invalidNumber) {
+                throw ({ type: 'NUMERO_INVALIDO', message:'Número sem WhatsApp cadastro'});
+            }
+
+            try {
+                await page.waitForSelector('#main [data-testid="conversation-panel-messages"] > div:last-of-type', { timeout: 10000 });
+            } catch (err) {
+                statusFormat = 'Não possui mensagem para esse contato';
+                break message;
+            }        
+
+            //Verificando se possui mensagem
+            const selector = '#main [data-testid="conversation-panel-messages"] > div:last-of-type > div[class*="message-"]';
+            const divs = await page.evaluate((sel) => Array.from(document.querySelectorAll(sel)).map(d => d.getAttribute("data-id")), selector, { timeout: 10000 });
+
+            if (divs.length === 0) {
+                statusFormat = 'Não possui mensagem para esse contato';
+                break message;
+            }
+
+            const dataIdLastMessage = divs[divs.length -1];
+            
+            const date = await page.$$eval("div[data-id='" + dataIdLastMessage + "'] > div > div > div > div:first-of-type", el => el.map(x => x.getAttribute("data-pre-plain-text")));
+
+            if (date[0] !== null) {
+                dateFormat = formatDateTime(date[0]);
+            }
+
+            sent = dataIdLastMessage.trim().includes("true_") ? 'Enviada' : 'Recebida';
+
+            let status = '-';
+
+            if (sent === 'Enviada') {
+                status = (await page.$$eval("div[data-id='" + dataIdLastMessage + "']  div[data-testid='msg-meta'] > div:last-of-type > span", el => el.map(x => x.getAttribute("aria-label"))))[0].trim();
+            }
+
+            statusFormat = (status === 'Read' || status === 'Lida') ? 'Lida' : 
+                           (status === 'Delivered' || status === 'Entregue') ? 'Entregue' : 
+                           (status === 'Sent' || status === 'Enviada') ? 'Enviada' : 
+                           (status === 'Pending' || status === 'Pendente') ? 'Pendente' :
+                           status === '-' ? status : 'Status não reconhecido';
         }
-
-        try {
-            await page.waitForSelector('#main [data-testid="conversation-panel-messages"] > div:last-of-type', { timeout: 10000 });
-        } catch (err) {
-            throw ({ type: 'SEM_MENSAGEM', message:'Não possui mensagem para esse contato'});
-        }        
-
-        //Verificando se possui mensagem
-        const selector = '#main [data-testid="conversation-panel-messages"] > div:last-of-type > div[class*="message-"]';
-        const divs = await page.evaluate((sel) => Array.from(document.querySelectorAll(sel)).map(d => d.getAttribute("data-id")), selector, { timeout: 10000 });
-
-        if (divs.length === 0) {
-            throw ({ type: 'SEM_MENSAGEM', message:'Não possui mensagem para esse contato'});
-        }
-
-        const dataIdLastMessage = divs[divs.length -1];
-
-        let dateFormat = '';
-        const date = await page.$$eval("div[data-id='" + dataIdLastMessage + "'] > div > div > div > div:first-of-type", el => el.map(x => x.getAttribute("data-pre-plain-text")));
-          
-        if (date[0] !== null) {
-            dateFormat = formatDateTime(date[0]);
-        }
-
-        const sent = dataIdLastMessage.trim().includes("true_") ? 'Enviada' : 'Recebida';
-
-        let status = '-';
-                
-        if (sent === 'Enviada') {
-            status = (await page.$$eval("div[data-id='" + dataIdLastMessage + "']  div[data-testid='msg-meta'] > div:last-of-type > span", el => el.map(x => x.getAttribute("aria-label"))))[0].trim();
-        }
-
-        const statusFormat = (status === 'Read' || status === 'Lida') ? 'Lida' : 
-                             (status === 'Delivered' || status === 'Entregue') ? 'Entregue' : 
-                             (status === 'Sent' || status === 'Enviada') ? 'Enviada' : 
-                             (status === 'Pending' || status === 'Pendente') ? 'Pendente' :
-                             status === '-' ? status : 'Status não reconhecido';
 
         //Parte de Etiquetas
         const formTags = await page.$('div[data-testid="conversation-info-header"]');		
