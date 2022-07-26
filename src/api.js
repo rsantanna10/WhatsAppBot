@@ -305,12 +305,7 @@ async function send(phoneOrContacts, message) {
         const sent = dataIdLastMessage.trim().includes("true_") ? 'Enviada' : 'Recebida';
 
         let status = '-';
-
-        console.log('data-id => ' + dataIdLastMessage);
-        console.log('sent => ' + sent);
-        await sleep(60000000);
-
-        
+                
         if (sent === 'Enviada') {
             status = (await page.$$eval("div[data-id='" + dataIdLastMessage + "']  div[data-testid='msg-meta'] > div:last-of-type > span", el => el.map(x => x.getAttribute("aria-label"))))[0].trim();
         }
@@ -321,11 +316,33 @@ async function send(phoneOrContacts, message) {
                              (status === 'Pending' || status === 'Pendente') ? 'Pendente' :
                              status === '-' ? status : 'Status não reconhecido';
 
+        //Parte de Etiquetas
+        const formTags = await page.$('div[data-testid="conversation-info-header"]');		
+        await formTags.evaluate( f => f.click() );
+
+        //Página de informações do contato
+        const selectorTags = 'div[data-testid="contact-info-drawer"] > div > section > div:first-of-type > div:last-of-type';
+        await page.waitForSelector(selectorTags, { timeout: 10000 });
+
+        const divsTags = await page.evaluate((sel) => Array.from(document.querySelectorAll(sel)).map(d => d.getAttribute("class")), ` ${selectorTags} > div`, { timeout: 10000 });
+
+        let txtTags = '';
+        if(divsTags.length == 0) {
+            txtTags = 'Sem etiqueta';
+        } else {
+
+            for (let i = 1; i <= divsTags.length; i++) {
+                let spanTag = await page.$(`div[data-testid="contact-info-drawer"] > div > section > div:first-of-type > div:last-of-type > div:nth-of-type(${i}) > div > span`);
+                txtTags += `${await page.evaluate(el => el.textContent, spanTag)},`;
+             }
+             txtTags = txtTags.replace(/,\s*$/, "");
+        }        
+
         process.stdout.clearLine();
         process.stdout.cursorTo(0);
         process.stdout.write(`${phone} - Scrapper OK\n`);
 		counter.success++;
-        return `${phone};${sent};${dateFormat};${statusFormat}\n`;
+        return `${phone};${sent};${dateFormat};${statusFormat};${txtTags}\n`;
         
         
     } catch (err) {
@@ -345,7 +362,7 @@ async function scrapperLastMessage(phoneOrContacts) {
 
     var writeStream = fs.createWriteStream("enviados-recebidos.csv");
 
-    writeStream.write('Número;Status;Data da Ocorrência;Descrição\n');
+    writeStream.write('Número;Status;Data da Ocorrência;Descrição;Etiquetas\n');
        
     for (let phoneOrContact of phoneOrContacts) {
         const result = await scrapperLastMessageTo(phoneOrContact.number);
