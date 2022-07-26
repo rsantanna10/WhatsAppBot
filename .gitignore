@@ -1,6 +1,11 @@
 # Temporary session file
 tmp/
 
+# Arquivos do projeto
+contatos.csv
+contatos-scrapper.csv
+enviados-recebidos.csv
+
 # Logs
 logs
 *.log
