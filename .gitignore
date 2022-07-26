@@ -2,9 +2,9 @@
 tmp/
 
 # Arquivos do projeto
-contatos.csv
-contatos-scrapper.csv
-enviados-recebidos.csv
+/contatos.csv
+/contatos-scrapper.csv
+/enviados-recebidos.csv
 
 # Logs
 logs
