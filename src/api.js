@@ -324,23 +324,37 @@ async function send(phoneOrContacts, message) {
         }
 
         //Parte de Etiquetas
-        const formTags = await page.$('div[data-testid="conversation-info-header"]');		
+        const formTags = await page.$('div[data-testid="conversation-info-header"]');
         await formTags.evaluate( f => f.click() );
 
+        let typePersonPF = null;
+        //Verificando contato PJ ou PF
+        try {
+            await page.waitForSelector('div[data-testid="business-title"]', { timeout: 5000 });
+            typePersonPF = false;
+        } catch {
+            typePersonPF = true;
+        }
+
         //Página de informações do contato
-        const selectorTags = 'div[data-testid="contact-info-drawer"] > div > section > div:first-of-type > div:last-of-type';
+        const selectorTags = `div[data-testid="contact-info-drawer"] > div > section > div:nth-of-type(${typePersonPF ? 1 : 3}) > div:last-of-type`;
         await page.waitForSelector(selectorTags, { timeout: 10000 });
 
         const divsTags = await page.evaluate((sel) => Array.from(document.querySelectorAll(sel)).map(d => d.getAttribute("class")), ` ${selectorTags} > div`, { timeout: 10000 });
-
         let txtTags = '';
         if(divsTags.length == 0) {
             txtTags = 'Sem etiqueta';
         } else {
 
             for (let i = 1; i <= divsTags.length; i++) {
-                let spanTag = await page.$(`div[data-testid="contact-info-drawer"] > div > section > div:first-of-type > div:last-of-type > div:nth-of-type(${i}) > div > span`);
-                txtTags += `${await page.evaluate(el => el.textContent, spanTag)},`;
+                const divSelectorTag = `${selectorTags} > div:nth-of-type(${i}) > div > span`;
+                try {
+                    await page.waitForSelector(divSelectorTag, { timeout: 10000 });
+                    let spanTag = await page.$(divSelectorTag);
+                    txtTags += `${await page.evaluate(el => el.textContent, spanTag)},`;
+                } catch {
+                    continue;
+                }      
              }
              txtTags = txtTags.replace(/,\s*$/, "");
         }        
