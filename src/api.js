@@ -278,10 +278,12 @@ async function send(phoneOrContacts, message) {
         let sent = '-';
         let dateFormat = '-';
         let statusFormat = '-';
+        let typeContact = '-'
 
         message: {
             if (invalidNumber) {
-                throw ({ type: 'NUMERO_INVALIDO', message:'Número sem WhatsApp cadastro'});
+                statusFormat = 'Número sem WhatsApp cadastro';
+                break message;
             }
 
             try {
@@ -336,13 +338,15 @@ async function send(phoneOrContacts, message) {
             typePersonPF = true;
         }
 
+        typeContact = typePersonPF ? 'Contato comum' : 'Contato comercial';
+
         //Página de informações do contato
         const selectorTags = `div[data-testid="contact-info-drawer"] > div > section > div:nth-of-type(${typePersonPF ? 1 : 3}) > div:last-of-type`;
         await page.waitForSelector(selectorTags, { timeout: 10000 });
 
         const divsTags = await page.evaluate((sel) => Array.from(document.querySelectorAll(sel)).map(d => d.getAttribute("class")), ` ${selectorTags} > div`, { timeout: 10000 });
         let txtTags = '';
-        if(divsTags.length == 0) {
+        if(divsTags.length == 0 || divsTags == null) {
             txtTags = 'Sem etiqueta';
         } else {
 
@@ -363,7 +367,7 @@ async function send(phoneOrContacts, message) {
         process.stdout.cursorTo(0);
         process.stdout.write(`${phone} - Scrapper OK\n`);
 		counter.success++;
-        return `${phone};${sent};${dateFormat};${statusFormat};${txtTags}\n`;
+        return `${phone};${sent};${dateFormat};${statusFormat};${typeContact};${txtTags}\n`;
         
         
     } catch (err) {
@@ -383,7 +387,7 @@ async function scrapperLastMessage(phoneOrContacts) {
 
     var writeStream = fs.createWriteStream("enviados-recebidos.csv");
 
-    writeStream.write('Número;Status;Data da Ocorrência;Descrição;Etiquetas\n');
+    writeStream.write('Número;Status;Data da Ocorrência;Descrição;Tipo Contato;Etiquetas\n');
        
     for (let phoneOrContact of phoneOrContacts) {
         const result = await scrapperLastMessageTo(phoneOrContact.number);
