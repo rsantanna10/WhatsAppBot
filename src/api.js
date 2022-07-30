@@ -275,17 +275,16 @@ async function send(phoneOrContacts, message) {
         
         const invalidNumber = await VerifyInvalidNumber();
 
+        if (invalidNumber) {
+            throw ({ type: 'NUMERO_INVALIDO', message:'Número sem WhatsApp cadastro'});
+        }
+        
         let sent = '-';
         let dateFormat = '-';
         let statusFormat = '-';
         let typeContact = '-'
 
-        message: {
-            if (invalidNumber) {
-                statusFormat = 'Número sem WhatsApp cadastro';
-                break message;
-            }
-
+        message: {          
             try {
                 await page.waitForSelector('#main [data-testid="conversation-panel-messages"] > div:last-of-type', { timeout: 10000 });
             } catch (err) {
