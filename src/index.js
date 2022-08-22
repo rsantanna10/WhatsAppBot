@@ -39,5 +39,5 @@ app.post('/scrapper', async (req, res) => {
 
 // starting the server
 app.listen(port, () => {
-  console.log('listening on port 3001');
+  console.log(`listening on port ${port}`);
 });
