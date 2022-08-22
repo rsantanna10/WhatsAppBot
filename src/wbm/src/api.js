@@ -380,16 +380,16 @@ async function send(phoneOrContacts, message) {
              txtTags = txtTags.replace(/,\s*$/, "");
         }        
 
-        process.stdout.clearLine();
-        process.stdout.cursorTo(0);
+        //process.stdout.clearLine();
+        //process.stdout.cursorTo(0);
         process.stdout.write(`${phone} - Scrapper OK\n`);
 		counter.success++;
         return `${phone};${sent};${dateFormat};${statusFormat};${typeContact};${txtTags}\n`;
         
         
     } catch (err) {
-        process.stdout.clearLine();
-        process.stdout.cursorTo(0);
+        //process.stdout.clearLine();
+        //process.stdout.cursorTo(0);
         process.stdout.write(`${phone} - ${err.message} - Scrapper Falha\n`);
         counter.fails++;
         if (err.type) {
