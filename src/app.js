@@ -22,9 +22,9 @@ const APP = class App {
 
   express_config(server) {
     server.use(bodyParser.json());
-    server.use(bodyParser.urlencoded({ extended: true }))    ;
+    server.use(bodyParser.urlencoded({ extended: true }));
     server.use(helmet());
-    server.options('*', cors()) // include before other routes
+    server.use(cors()); // include before other routes
     
     return server;
   }
