@@ -20,4 +20,8 @@ module.exports = class TipoEspecialidade {
         const data = await mainService.scrapper(req.body);
         return res.status(200).send(data);
     }
+
+    static async test(req, res) {
+        return res.status(200).send();
+    }
 }

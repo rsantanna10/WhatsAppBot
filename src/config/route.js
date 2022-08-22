@@ -10,6 +10,7 @@ module.exports = class Route {
        
         server.route('/qrCode').get(main.qrCode);
         server.route('/scrapper').post(main.scrapper);
+        server.route('/test').get(main.test);
         
         
 	   return server;

@@ -20,7 +20,7 @@ const APP = class App {
     server.use(bodyParser.json());
     server.use(bodyParser.urlencoded({ extended: true }))    ;
     server.use(helmet());
-    server.options('*', cors()) // include before other routes
+    server.use(cors()) // include before other routes
     
     return server;
   }
