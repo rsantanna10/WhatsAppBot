@@ -1,4 +1,4 @@
-const wbm = require('wbm');
+const wbm = require('../wbm');
 
 const getQrCode = (session = true) => {
     // if user scan QR Code it will be hidden

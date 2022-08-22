@@ -1,5 +1,5 @@
 const mainService = require('../services/main');
-const wbm = require('wbm');
+const wbm = require('../wbm');
 
 module.exports = class Main {
 
