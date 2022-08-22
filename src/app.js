@@ -2,11 +2,15 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const helmet = require('helmet');
 const cors = require('cors')
+
+const CONFIG = require('./config/config.js');
 const ROUTE = require('./config/route.js');
+
+const PORT = process.env.PORT || CONFIG.port()
 let $SERVER = null
 
 const APP = class App {
-  constructor() {
+  constructor(){
     this.server = this.express_init(), this.express_config(this.server), this.express_route(this.server)
     $SERVER = this.start_server(this.server)
     return $SERVER
@@ -20,7 +24,7 @@ const APP = class App {
     server.use(bodyParser.json());
     server.use(bodyParser.urlencoded({ extended: true }))    ;
     server.use(helmet());
-    server.use(cors()) // include before other routes
+    server.options('*', cors()) // include before other routes
     
     return server;
   }
@@ -30,8 +34,8 @@ const APP = class App {
   }
 
   start_server(server){ 
-    return server.listen(process.env.PORT || 3000, () => {
-      console.log(`Server online on port ${process.env.PORT || 3000}`);
+    return server.listen(PORT, () => {
+      console.log(`Server online on port ${PORT}`);
       return server
     })   
   }
