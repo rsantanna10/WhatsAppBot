@@ -4,7 +4,7 @@ const wbm = require('../wbm');
 module.exports = class Main {
 
     static async qrCode(req, res) {
-        wbm.end();
+        await wbm.end();
         mainService.getQrCode(req.query.session).then((data) => {
     
             if (data === true) {

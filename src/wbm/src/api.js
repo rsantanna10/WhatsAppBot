@@ -441,6 +441,7 @@ function generateCustomMessage(contact, messagePrototype) {
  */
 async function end(waitStart = false) {
 
+    if (browser == null) return;
     if (!waitStart) {
         await browser.close();
         console.log(`Result: ${counter.success} sent, ${counter.fails} failed`);
