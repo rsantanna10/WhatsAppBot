@@ -1,9 +1,10 @@
 const mainService = require('../services/main');
 const wbm = require('wbm');
 
-module.exports = class TipoEspecialidade {
+module.exports = class Main {
 
     static async qrCode(req, res) {
+        return res.status(200).send();
         mainService.getQrCode(req.query.session).then((data) => {
     
             if (data === true) {
