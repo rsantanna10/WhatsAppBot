@@ -1,52 +1,49 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const cors = require('cors');
 const helmet = require('helmet');
-const mainService = require('./services/main');
-const wbm = require('wbm');
+const cors = require('cors')
 
-// defining the Express app
-const app = express();
+const CONFIG = require('./config/config.js');
+const ROUTE = require('./config/route.js');
 
-const port = process.env.PORT || 3001;
+const PORT = process.env.PORT || CONFIG.port()
+let $SERVER = null
 
-// adding Helmet to enhance your Rest API's security
-app.use(helmet());
+const APP = class App {
+  constructor(){
+    this.server = this.express_init(), this.express_config(this.server), this.express_route(this.server)
+    $SERVER = this.start_server(this.server)
+    return $SERVER
+  }
 
-// using bodyParser to parse JSON bodies into JS objects
-app.use(bodyParser.json());
+  express_init(){
+    return express()
+  }
 
-// enabling CORS for all requests
-const whitelist = ['http://localhost:3000', 'https://app-scrapper-whatsapp.herokuapp.com']
-const corsOptions = {
-  origin: function (origin, callback) {
-    if (!origin || whitelist.indexOf(origin) !== -1) callback(null, true)
-    else callback(new Error('Not allowed by CORS'))
-  },
-  credentials: true,
-}
-
-app.use(cors(corsOptions))
-
-app.get('/qrCode', (req, res) => {
-  mainService.getQrCode(req.query.session).then((data) => {
+  express_config(server) {
+    server.use(bodyParser.json());
+    server.use(bodyParser.urlencoded({ extended: true }))    ;
+    server.use(helmet());
+    server.use(cors());
     
-    if (data === true) {
-      wbm.end();
-      return res.status(200).send({qrcode: true});
-    }
-       
-    wbm.end(true);    
-    return res.status(200).send({qrcode: false, data});    
-  });
-});
+    return server;
+  }
 
-app.post('/scrapper', async (req, res) => {
-  const data = await mainService.scrapper(req.body);
-  return res.status(200).send(data);
-});
+  express_route(server){
+    return new ROUTE(server)
+  }
 
-// starting the server
-app.listen(port, () => {
-  console.log(`listening on port ${port}`);
-});
+  start_server(server){ 
+    return server.listen(PORT, () => {
+      console.log(`Server online on port ${PORT}`);
+      return server
+    })   
+  }
+
+  static close_server(){
+    $SERVER.close()
+  }
+}
+new APP()
+
+module.exports = APP
