@@ -17,7 +17,10 @@ app.use(helmet());
 app.use(bodyParser.json());
 
 // enabling CORS for all requests
-app.use(cors());
+const corsOption = {
+  origin: ['http://127.0.0.1:3000'],
+};
+app.use(cors(corsOption));
 
 app.get('/qrCode', (req, res) => {
   mainService.getQrCode(req.query.session).then((data) => {
