@@ -1,6 +1,6 @@
 const csv = require('csv-parser')
 const fs = require('fs');
-const wbm = require('wbm');
+const wbm = require('./wbm');
 
 (async () => {
     //Obtendo contatos
