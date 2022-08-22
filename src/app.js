@@ -24,12 +24,7 @@ const APP = class App {
     server.use(bodyParser.json());
     server.use(bodyParser.urlencoded({ extended: true }))    ;
     server.use(helmet());
-    server.use(cors());
-    server.use(function(req, res, next) {
-      res.header("Access-Control-Allow-Origin", "*");
-      res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-      next();
-  });
+    server.options('*', cors()) // include before other routes
     
     return server;
   }
