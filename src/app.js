@@ -17,7 +17,16 @@ app.use(helmet());
 app.use(bodyParser.json());
 
 // enabling CORS for all requests
-app.use(cors());
+const whitelist = ['http://localhost:3000', 'https://app-scrapper-whatsapp.herokuapp.com']
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || whitelist.indexOf(origin) !== -1) callback(null, true)
+    else callback(new Error('Not allowed by CORS'))
+  },
+  credentials: true,
+}
+
+app.use(cors(corsOptions))
 
 app.get('/qrCode', (req, res) => {
   mainService.getQrCode(req.query.session).then((data) => {
