@@ -5,6 +5,7 @@
   "main": "app.js",
   "scripts": {
     "start": "node src/app.js",
+    "scrapper": "node src/init-scrapper.js",
     "debug": "nodemon --inspect src/app.js",
     "test": "cross-env port=3000 server_type='test' mocha tests/**/*.js"
   },
@@ -15,6 +16,7 @@
     "express": "^4.18.1",
     "fs": "^0.0.1-security",
     "helmet": "^5.1.1",
+    "puppeteer": "^17.0.0",
     "wbm": "^1.1.16"
   },
   "devDependencies": {},

@@ -23,7 +23,7 @@ const SELECTORS = {
 /**
  * Initialize browser, page and setup page desktop mode
  */
-async function start({ showBrowser = false, qrCodeData = false, session = true } = {}) {
+async function start({ showBrowser = true, qrCodeData = false, session = true } = {}) {
     if (!session) {
         deleteSession(tmpPath);
     }
@@ -32,7 +32,8 @@ async function start({ showBrowser = false, qrCodeData = false, session = true }
         headless: !showBrowser,
         userDataDir: tmpPath,
         args: ["--no-sandbox",
-               "--disable-setuid-sandbox"
+               "--disable-setuid-sandbox",
+               '--disable-gpu'
             // "--blink-settings=imagesEnabled=false"]
         ]
     }
