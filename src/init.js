@@ -1,6 +1,6 @@
 const csv = require('csv-parser')
 const fs = require('fs');
-const wbm = require('./src/index');
+const wbm = require('./wbm/src/index');
 
 (async () => {
     //Obtendo mensagem
