@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node src/app.js",
     "scrapper": "node src/init-scrapper.js",
+    "send": "node src/init.js",
     "debug": "nodemon --inspect src/app.js",
     "test": "cross-env port=3000 server_type='test' mocha tests/**/*.js"
   },

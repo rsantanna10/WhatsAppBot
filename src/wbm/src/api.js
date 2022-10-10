@@ -230,12 +230,12 @@ async function sendTo(phoneOrContact, message) {
         
         await page.waitForSelector('div[tabindex="-1"]', { timeout: 5000 });
         await page.keyboard.press("Enter");
-        await page.waitFor(1000);
+        
         process.stdout.clearLine();
         process.stdout.cursorTo(0);
         process.stdout.write(`${phone} - Enviado\n`);
 		counter.success++;
-        await sleep(60000);
+        await sleep(115000);
         
     } catch (err) {
         process.stdout.clearLine();
