@@ -235,7 +235,7 @@ async function sendTo(phoneOrContact, message) {
         process.stdout.cursorTo(0);
         process.stdout.write(`${phone} - Enviado\n`);
 		counter.success++;
-        await sleep(115000);
+        await sleep(60000 * (Math.floor(Math.random() * (3 - 1)) + 1));
         
     } catch (err) {
         process.stdout.clearLine();
@@ -246,8 +246,11 @@ async function sendTo(phoneOrContact, message) {
 }
 
 async function send(phoneOrContacts, message) {
-    for (let phoneOrContact of phoneOrContacts) {
-        await sendTo(phoneOrContact.number, message.replace('{name}', phoneOrContact.name));
+
+    const arrMessage = message.split('----');
+
+    for (let i = 0; i < phoneOrContacts.length; i++) {
+        await sendTo(phoneOrContacts[i].number, arrMessage[i%arrMessage.length].replace('{name}', phoneOrContacts[i].name));
     }
 }
 
