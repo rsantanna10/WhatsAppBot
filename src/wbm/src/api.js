@@ -216,10 +216,12 @@ async function sendTo(phoneOrContact, message) {
         }
         
         await setSelectVal('#contact_send', `https://wa.me/${phone}?text=${encodeURIComponent(message)}`);
-
 		
 		const form = await page.$('a#contact_send');
 		await form.evaluate( f => f.click() );
+
+        //Aguardar 3 segundos
+        await sleep(3000);
 
         //Verificação de número inválido
         const invalidNumber = await VerifyInvalidNumber();
@@ -295,6 +297,9 @@ async function send(phoneOrContacts, message) {
 		const form = await page.$('a#contact_send');		
         await form.evaluate( f => f.click() );
         
+        //Aguardar 3 segundos
+        await sleep(3000);
+
         const invalidNumber = await VerifyInvalidNumber();
 
         if (invalidNumber) {
@@ -362,7 +367,7 @@ async function send(phoneOrContacts, message) {
         typeContact = typePersonPF ? 'Contato comum' : 'Contato comercial';
 
         //Página de informações do contato
-        const selectorTags = `div[data-testid="contact-info-drawer"] > div > section > div:nth-of-type(${typePersonPF ? 1 : 3}) > div:last-of-type`;
+        const selectorTags = `div[data-testid="chat-info-drawer"] > div > section > div:nth-of-type(${typePersonPF ? 1 : 3}) > div:last-of-type`;
         await page.waitForSelector(selectorTags, { timeout: 10000 });
 
         const divsTags = await page.evaluate((sel) => Array.from(document.querySelectorAll(sel)).map(d => d.getAttribute("class")), ` ${selectorTags} > div`, { timeout: 10000 });
