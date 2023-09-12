@@ -15,7 +15,7 @@ const SELECTORS = {
     LOADING: "progress",
     INSIDE_CHAT: "document.getElementsByClassName('two')[0]",
     QRCODE_PAGE: "body > div > div > .landing-wrapper",
-    QRCODE_DATA: "div[data-testid='qrcode'] ",
+    QRCODE_DATA: ".landing-main > div:nth-child(2) > div > div:nth-child(2) > div",
     QRCODE_DATA_ATTR: "data-ref",
     SEND_BUTTON: 'div:nth-child(2) > button > span[data-icon="send"]'
 };
@@ -105,12 +105,10 @@ function deleteSession() {
  * return the data used to create the QR Code
  */
 async function getQRCodeData() {
-    await page.waitForSelector(SELECTORS.QRCODE_DATA, { timeout: 120000 });
-    const qrcodeData = await page.evaluate((SELECTORS) => {
-        let qrcodeDiv = document.querySelector(SELECTORS.QRCODE_DATA);
-        return qrcodeDiv.getAttribute(SELECTORS.QRCODE_DATA_ATTR);
-    }, SELECTORS);
-    return await qrcodeData;
+    await page.waitForFunction(`document.querySelector('${SELECTORS.QRCODE_DATA}') !== '' && document.querySelector('${SELECTORS.QRCODE_DATA}').getAttribute('data-ref') !== null`, { timeout: 120000 });
+    let element = await page.$(SELECTORS.QRCODE_DATA)
+    
+    return await page.evaluate(el => el.getAttribute('data-ref'), element);
 }
 
 /**
@@ -123,6 +121,7 @@ async function generateQRCode() {
         qrcode.generate(qrcodeData, { small: true });
         console.log("QRCode generated! Scan it using Whatsapp App.");
     } catch (err) {
+        console.log(err)
         throw await QRCodeExeption("QR Code can't be generated(maybe your connection is too slow).");
     }
     await waitQRCode();
@@ -167,7 +166,7 @@ async function QRCodeExeption(msg) {
         await page.waitForSelector(divInvalid, { timeout: 8000 });
         messageInvalid = await page.$eval(divInvalid, el => el.textContent);
   
-        if (messageInvalid === 'O número de telefone compartilhado através de url é inválido.') {
+        if (messageInvalid === 'O número de telefone compartilhado através de url é inválido.' || messageInvalid === 'Phone number shared via url is invalid.') {
           invalidNumber = true;
           break;
         }
@@ -181,7 +180,7 @@ async function QRCodeExeption(msg) {
                 break;
             }
       }
-    } while(messageInvalid === 'Iniciando conversa')
+    } while(messageInvalid === 'Iniciando conversa' || 'Starting chat')
     return invalidNumber;
 }
 
@@ -309,18 +308,18 @@ async function send(phoneOrContacts, message) {
         let sent = '-';
         let dateFormat = '-';
         let statusFormat = '-';
-        let typeContact = '-'
+        let typeContact = '-';
 
         message: {          
             try {
-                await page.waitForSelector('#main [data-testid="conversation-panel-messages"] > div:last-of-type', { timeout: 10000 });
+                await page.waitForSelector('#main .copyable-area div[role="row"]:last-of-type', { timeout: 10000 });
             } catch (err) {
                 statusFormat = 'Não possui mensagem para esse contato';
                 break message;
-            }        
+            }           
 
             //Verificando se possui mensagem
-            const selector = '#main [data-testid="conversation-panel-messages"] > div:last-of-type > div[class*="message-"]';
+            const selector = '#main .copyable-area div[role="application"] > div[role="row"] > div';
             const divs = await page.evaluate((sel) => Array.from(document.querySelectorAll(sel)).map(d => d.getAttribute("data-id")), selector, { timeout: 10000 });
 
             if (divs.length === 0) {
@@ -328,9 +327,19 @@ async function send(phoneOrContacts, message) {
                 break message;
             }
 
-            const dataIdLastMessage = divs[divs.length -1];
+            if(divs.length === 1) {
+                try{
+                    await page.waitForSelector("div[data-id='" + divs[0] + "'] > > div[class*='message-']", { timeout: 2000 });
+                } catch (err) {
+                    statusFormat = 'Não possui mensagem para esse contato';
+                    break message;
+                }
+            }
             
-            const date = await page.$$eval("div[data-id='" + dataIdLastMessage + "'] > div > div > div > div:first-of-type", el => el.map(x => x.getAttribute("data-pre-plain-text")));
+           
+            const dataIdLastMessage = divs[divs.length -1];
+
+            const date = await page.$$eval("div[data-id='" + dataIdLastMessage + "'] > div > div > div > div:first-of-type > div > div:first-of-type", el => el.map(x => x.getAttribute("data-pre-plain-text")));
 
             if (date[0] !== null) {
                 dateFormat = formatDateTime(date[0]);
@@ -341,7 +350,7 @@ async function send(phoneOrContacts, message) {
             let status = '-';
 
             if (sent === 'Enviada') {
-                status = (await page.$$eval("div[data-id='" + dataIdLastMessage + "']  div[data-testid='msg-meta'] > div:last-of-type > span", el => el.map(x => x.getAttribute("aria-label"))))[0].trim();
+                status = (await page.$$eval("div[data-id='" + dataIdLastMessage + "'] > div >  div:first-of-type > div:first-of-type > div:first-of-type >  div:last-of-type > div > div > span", el => el.map(x => x.getAttribute("aria-label"))))[0].trim();
             }
 
             statusFormat = (status === 'Read' || status === 'Lida') ? 'Lida' : 
@@ -350,6 +359,9 @@ async function send(phoneOrContacts, message) {
                            (status === 'Pending' || status === 'Pendente') ? 'Pendente' :
                            status === '-' ? status : 'Status não reconhecido';
         }
+
+        let txtTags = '';
+/*
 
         //Parte de Etiquetas
         const formTags = await page.$('div[data-testid="conversation-info-header"]');
@@ -371,7 +383,7 @@ async function send(phoneOrContacts, message) {
         await page.waitForSelector(selectorTags, { timeout: 10000 });
 
         const divsTags = await page.evaluate((sel) => Array.from(document.querySelectorAll(sel)).map(d => d.getAttribute("class")), ` ${selectorTags} > div`, { timeout: 10000 });
-        let txtTags = '';
+        
         if(divsTags.length == 0 || divsTags == null) {
             txtTags = 'Sem etiqueta';
         } else {
@@ -388,6 +400,7 @@ async function send(phoneOrContacts, message) {
              }
              txtTags = txtTags.replace(/,\s*$/, "");
         }        
+        */
 
         //process.stdout.clearLine();
         //process.stdout.cursorTo(0);
